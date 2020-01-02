@@ -1,0 +1,104 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+
+import os
+import sys
+import pandas as pd
+import numpy as np
+import sqlite3
+import sys
+import pymysql
+
+
+def createTable(host,user,password,database,table):
+    print('createTable')
+    # 连接database
+    conn = pymysql.connect(host=host, user=user,password=password,database=database,charset='utf8')
+    # 得到一个可以执行SQL语句的光标对象
+    cursor = conn.cursor()
+    # 定义要执行的SQL语句
+    sqlStr='CREATE TABLE '+table+' ('
+    sqlStr='CREATE TABLE IF NOT EXISTS '+table+' ('
+    sqlStr+='id INT auto_increment PRIMARY KEY ,'
+    sqlStr+='address CHAR(50) NOT NULL UNIQUE,'
+    sqlStr+='name CHAR(50) NOT NULL,'
+    sqlStr+='mac CHAR(50) NOT NULL,'
+    sqlStr+='user CHAR(50) NOT NULL,'
+    sqlStr+='status CHAR(50) NOT NULL,'
+    sqlStr+='description TEXT(500) NOT NULL'
+    sqlStr+=') ENGINE=innodb DEFAULT CHARSET=utf8;'
+    # 执行SQL语句 
+    cursor.execute(sqlStr)
+    # 关闭光标对象
+    cursor.close()
+    # 关闭数据库连接
+    conn.close()
+
+def insertTable(ipFile,host,user,password,database,table):
+    print('insertTable')
+    ipFile=os.getcwd()+'/'+ipFile
+    df=pd.read_csv(ipFile,encoding='gbk')
+    df=df.replace(np.nan,'')
+    print(df['资产编号'])
+
+    # 打开数据库连接
+    db = pymysql.connect(host=host, user=user,password=password,database=database,charset='utf8')
+    # 使用cursor()方法获取操作游标
+    cursor = db.cursor()
+    size=len(list(df['IP地址']))
+    # SQL 插入语句
+    for i in range(size):
+        sqlStr='INSERT INTO '+table+'(address,'
+        sqlStr+='name, mac,user,status,description) '
+        sqlStr+='VALUES ('+'"'+list(df['IP地址'])[i]+'"'+','+'"'+list(df['资产编号'])[i]+'"'+','+'"'+list(df['MAC地址'])[i]+'"'+','+'"'+''+'"'+','+'"'+list(df['使用状态'])[i]+'"'+','+'"'+''+'"'+')'
+        sqlStr+='ON DUPLICATE KEY UPDATE name=VALUES(name),mac=VALUES(mac),user=VALUES(user),status=VALUES(status),description=VALUES(description)'
+        print(sqlStr)
+        # 执行sql语句
+        cursor.execute(sqlStr)
+        # 提交到数据库执行
+        db.commit()
+    # 关闭数据库连接
+    db.close()
+
+def updateAsset(ipFile,host,user,password,database,table):
+    ipFile=os.getcwd()+'/'+ipFile
+    print(ipFile)
+    df=pd.read_csv(ipFile,encoding='gbk')
+    df=df.replace(np.nan,'')
+    print(df['资产编号'])
+
+    # 打开数据库连接
+    db = pymysql.connect(host=host, user=user,password=password,database=database,charset='utf8')
+    # 使用cursor()方法获取操作游标
+    cursor = db.cursor()
+    size=len(list(df['资产编号']))
+    # SQL 插入语句
+    for i in range(size):
+        sqlStr='UPDATE '+table
+        sqlStr+=' set user='+'"'+list(df['领用人'])[i]+'"'
+        sqlStr+='where name='+'"'+list(df['资产编号'])[i]+'"'
+        print(sqlStr)
+        # 执行sql语句
+        cursor.execute(sqlStr)
+        # 提交到数据库执行
+    db.commit()
+    # 关闭数据库连接
+    db.close()
+
+def writeMySQL(ipFile,host,user,password,database,table):
+    print('10002')
+    createTable(host,user,password,database,table)
+    print('10003')
+    insertTable(ipFile,host,user,password,database,table)
+    print('10004')
+
+##def updateMySQL(ipFile,host,user,password,database,table):
+##    updateTable(ipFile,host,user,password,database,table)  
+##
+##if __name__ == "__main__":
+##    writeMySQL('20191120_162021_10.63.152.csv','10.63.152.158','root','Bts1test','ipdb','app_ip901')
+##    updateAsset('上海测试部.csv','10.63.152.158','root','Bts1test','ipdb','app_ip901')
+##    updateAsset('上海软件部.csv','10.63.152.158','root','Bts1test','ipdb','app_ip901')
+
+

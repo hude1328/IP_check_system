@@ -1,0 +1,155 @@
+# -*- coding: utf-8 -*-
+
+import sys
+import os
+from PyQt5.QtWidgets import QApplication,  QMainWindow
+from Gui.testGui import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import *
+
+from ipTest import ipTest
+from dbTest import writeMySQL,updateAsset
+from config import configDict
+import time
+
+
+#获取当前时间
+def getDateTime():
+    return str(time.strftime('%Y%m%d_%H%M%S', time.localtime(time.time())))
+
+class WorkThread(QThread):
+    trigger = pyqtSignal(str)
+    def __int__(self):
+        super(WorkThread,self).__init__()
+        self.setFixedSize(self.width(), self.height())
+
+    def run(self):   
+        host=self.paraDict['host']
+        user=self.paraDict['user']
+        password=self.paraDict['password']
+        database=self.paraDict['database']
+        flag=self.paraDict['flag']
+        dbTable=self.paraDict['dbTable']
+        dateTime=self.paraDict['dateTime']
+        csvFile=self.paraDict['csvFile']
+        mode=self.paraDict['mode']
+        print(flag,dateTime)
+        if mode=='ipTest':
+            ipTest(flag,dateTime)
+            self.trigger.emit('ipTest测试结束!')
+        elif mode=='ipTest and writeMySQL':
+            ipTest(flag,dateTime)
+            self.trigger.emit('ipTest测试结束!')
+            writeMySQL(csvFile,host,user,password,database,dbTable)
+            self.trigger.emit('writeMySQL测试结束!')
+        elif mode=='updateAsset':
+            updateAsset(csvFile,host,user,password,database,dbTable)        
+            self.trigger.emit('updateAssetToMySQL测试结束!')
+
+class IpTestMain(QMainWindow,Ui_Form):
+  
+    def __init__(self,parent=None):
+        print('IpTestMain SoftWare 20191119_1000')
+        super(IpTestMain,self).__init__(parent)
+        self.setupUi(self)
+        self.init_Gui()
+                    
+    def init_Gui(self):
+        self.pushButton_checkIp.clicked.connect(self.ipTest)
+        self.pushButton_checkIpWriteMySQL.clicked.connect(self.ipTestWriteMySQL)
+        self.pushButton_asset.clicked.connect(self.updateAsset)
+        self.toolButton_assetPath.clicked.connect(self.getAssetFile)
+
+    def getAssetFile(self):
+        print('getAssetFile start')
+        assetAllFile = QFileDialog.getOpenFileName(self,'open file', '*.csv')[0]
+        print(assetAllFile)
+        self.lineEdit_assetPath.setText(assetAllFile)
+        self.__assetFile=assetAllFile.split('/')[-1]
+        print(self.__assetFile)
+        print('getAssetFile end')
+               
+    def ipTest(self):
+        self.textEdit.setText('开始ipTest测试')
+        dateTimeStr=getDateTime()
+        flagStr=self.lineEdit_ipFlag.text()
+        resultDict={
+            'host':configDict['host'],
+            'user':configDict['user'],
+            'password':configDict['password'],
+            'database':configDict['database'],
+            'flag':flagStr,
+            'dbTable':self.lineEdit_table.text(),
+            'dateTime':dateTimeStr,
+            'csvFile':dateTimeStr+'_'+flagStr+'csv',
+            'mode':'ipTest'
+        }
+        print(resultDict)
+        wt = WorkThread()
+        wt.paraDict=resultDict
+        wt.start()
+        time.sleep(3)
+        wt.trigger.connect(self.refresh_Gui)
+
+    def ipTestWriteMySQL(self):
+        self.textEdit.setText('开始ipTest and writeMySQL测试')
+        dateTimeStr=getDateTime()
+        flagStr=self.lineEdit_ipFlag.text()
+        resultDict={
+            'host':configDict['host'],
+            'user':configDict['user'],
+            'password':configDict['password'],
+            'database':configDict['database'],
+            'flag':flagStr,
+            'dbTable':self.lineEdit_table.text(),
+            'dateTime':dateTimeStr,
+            'csvFile':dateTimeStr+'_'+flagStr+'csv',
+            'mode':'ipTest and writeMySQL'
+        }
+        print(resultDict)
+        wt = WorkThread()
+        wt.paraDict=resultDict
+        wt.start()
+        time.sleep(3)
+        wt.trigger.connect(self.refresh_Gui)
+
+    def updateAsset(self):
+        self.textEdit.setText('开始updateAsset2MySQL测试')
+        time.sleep(3)
+        dateTimeStr=getDateTime()
+        flagStr=self.lineEdit_ipFlag.text()
+        resultDict={
+            'host':configDict['host'],
+            'user':configDict['user'],
+            'password':configDict['password'],
+            'database':configDict['database'],
+            'flag':flagStr,
+            'dbTable':self.lineEdit_table.text(),
+            'dateTime':dateTimeStr,
+            'csvFile':self.__assetFile,
+            'mode':'updateAsset'
+        }
+        print(resultDict)
+        wt = WorkThread()
+        wt.paraDict=resultDict
+        wt.start()
+        time.sleep(3)
+        wt.trigger.connect(self.refresh_Gui)
+
+    def refresh_Gui(self,flag):
+        self.textEdit.append(flag)
+
+        
+        
+        
+if __name__ == "__main__":
+    multiprocessing.freeze_support()
+    app = QApplication(sys.argv)
+    myWin = IpTestMain()
+    myWin.show()
+    sys.exit(app.exec_())
+
+  
+
+

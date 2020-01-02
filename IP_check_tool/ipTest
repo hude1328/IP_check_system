@@ -1,0 +1,173 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+import os
+import re
+import sys
+from datetime import datetime
+import socket
+import csv
+from multiprocessing import  Manager
+from concurrent.futures import ProcessPoolExecutor
+import subprocess
+import time
+
+#获取当前时间
+def getDateTime():
+    return str(time.strftime('%Y%m%d_%H%M%S', time.localtime(time.time())))
+
+#ping命令,刷缓存
+def run_ping(ip):
+    cmdStr = 'ping '+ip+' -n 1' 
+    p = subprocess.Popen(cmdStr, 
+        stdin = subprocess.PIPE, 
+        stdout = subprocess.PIPE, 
+        stderr = subprocess.PIPE, shell = True)
+    
+#arp命令获取在线IP和MAC   
+def run_arp(ipFlag):   
+    cmdStr = 'arp -a'
+    p = subprocess.Popen(cmdStr, 
+        stdin = subprocess.PIPE, 
+        stdout = subprocess.PIPE, 
+        stderr = subprocess.PIPE, shell = True)
+    
+    all_the_text = p.stdout.read()
+    regexpStr='('+str(ipFlag)+')\s+([a-z0-9]{2}-[a-z0-9]{2}'+\
+        '-[a-z0-9]{2}-[a-z0-9]{2}-[a-z0-9]{2}-[a-z0-9]{2})\s+'
+    patt = re.compile(regexpStr)
+    queryResult = re.findall(patt,str(all_the_text))
+##    print(queryResult)
+    return queryResult
+
+#获取计算机名
+def get_host(ip,resultList):
+    host=socket.gethostbyaddr(ip)
+    resultList.append({host[2][0]:host[0]})
+         
+#结果写CSV
+def writePingResult(csvFile,dataList):
+    if os.path.exists(csvFile):
+           os.remove(csvFile)
+    cf = open(csvFile, 'w',newline='')
+    writer = csv.writer(cf)
+    keylist=['IP地址','资产编号','MAC地址','使用状态','备注']
+    writer.writerow(keylist)
+    try:
+        for data in dataList:
+            writer.writerow(data.values())
+        cf.close()
+    except:
+        print('Write csv error!')
+        pass
+
+#获取本机名
+def getMyName(flag):
+    content= os.popen('ipconfig -all').read()
+    regexpStr = '主机名.*?:\s+(.*)'
+    patt = re.compile(regexpStr)
+    queryResult = re.findall(patt,content)
+    return queryResult[0]
+
+#获取本机IP,本机MAC
+def getMyIpMac(flag):
+    localIp=''
+    localMac=''
+    content= os.popen('ipconfig -all').read()
+    print(content)
+    regexpStr = '.*物理地址.*?:\s+(.*)\n.*\n.*\n.*\n.*IPv4 地址.*:\s+(\d+\.\d+\.\d+\.\d+)'
+    patt = re.compile(regexpStr)
+    queryResult = re.findall(patt,content)
+    print(queryResult)
+    if len(queryResult)>0:
+        for r in queryResult:
+            if r[1].find(flag)!=-1:
+                return r[1],r[0]
+    
+def ipTest(flag,dateTime):
+##    t1 = datetime.now()
+##    print('开始时间', t1)
+    
+    print('flag:',flag)
+
+    resultList=[]
+
+    mgr = Manager()
+    hostList = mgr.list()
+
+    myName=getMyName(flag)
+    print('本机名:',myName)
+    
+    myAddr,myMac=getMyIpMac(flag)
+    print('本机IP:',myAddr)
+    print('本机MAC:',myMac)
+
+
+    #多进程循环PING
+    executor = ProcessPoolExecutor(10)
+    for i in range(1,255,1):
+        ip= str(flag)+str(i)
+        executor.submit(run_ping, ip)
+    executor.shutdown(wait=True)
+
+    #在线IP
+    ipActiveList=[]
+    
+    #增加本地IP到在线IP列表中
+    ipActiveList.append(myAddr)
+
+    #此处只需要取flag网段数据
+    macActiveDict={}
+    for r in run_arp(flag+'\d+'):
+        ipActiveList.append(r[0])
+        macActiveDict[str(r[0])]=str(r[1])
+##    print(ipActiveList)
+##    print(macActiveDict)
+
+    #数据整理  
+    executor = ProcessPoolExecutor(20)
+    for ip in ipActiveList:
+        executor.submit(get_host, ip,hostList)
+    executor.shutdown(wait=True)
+
+    hostDict={}
+    for tmpDict in hostList:
+        for key in tmpDict: 
+           hostDict[key]=tmpDict[key]
+
+##    print(hostDict)
+
+    for i in range(1,255,1):
+        ip= str(flag)+str(i)
+        if ip==myAddr and ip in ipActiveList:
+                resultList.append({'address':myAddr,'user':myName,'mac':myMac,'status':'使用中','description':''})
+        elif ip in ipActiveList and ip in hostDict.keys():
+            if macActiveDict.get(ip)!=None:
+                resultList.append({'address':ip,'user':hostDict[ip],'mac':macActiveDict[ip],'status':'使用中','description':''})
+            else:
+                resultList.append({'address':ip,'user':hostDict[ip],'mac':'','status':'使用中','description':''})
+        elif ip in ipActiveList and ip not in hostDict.keys():
+            if macActiveDict.get(ip)!=None:
+                resultList.append({'address':ip,'user':'','mac':macActiveDict[ip],'status':'使用中','description':''})
+            else:
+                resultList.append({'address':ip,'user':'','mac':'','status':'使用中','description':''})
+        elif ip not in ipActiveList:
+            resultList.append({'address':ip,'user':'','mac':'','status':'空闲','description':''})
+
+    #输出结果
+    print('********')
+    print(resultList)
+    print('********')
+    
+    #写CSV
+    writePingResult(os.getcwd()+'/'+dateTime+'_'+flag+'csv',resultList)
+
+##    t2 = datetime.now()
+##    print('结束时间', t2)
+##    print('总耗时', str((t2 - t1).seconds))
+
+if __name__ == '__main__':
+    flag='10.63.152.'
+    dateTime=getDateTime()
+    ipTest(flag,dateTime)
+

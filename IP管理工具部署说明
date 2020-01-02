@@ -1,0 +1,68 @@
+1、环境配置
+（1）安装Python3.6配置环境变量.
+
+（2）安装Mysql客户端、Mysql Workbench（可选）。
+
+（3）安装脚本依赖Python库。
+>> pip3 install -i http://mirrors.zte.com.cn/pypi/simple [package_name] --trusted-host mirrors.zte.com.cn
+
+Pyinstaller  --> 用来将Python script打包成可执行exe文件的库函数
+PyQt5  && PyQt5-tools    --> GUI控制库函数
+pymysql     -->  Python 连接Mysql 库函数
+pandas && numpy     -->    文件、数据的读写操作
+Django      --> 用于创建web项目，将IP扫描结果展示在web页面中
+openpyxl     --> 用于操作excel表的库，用于从web页面中导出查询结果
+
+	**注意：如果下载的Django版本时2.2.2，则需要修改其默认的Mysql连接配置文件：
+		在D:\python\Lib\site-packages\django\db\backends\mysql目录中
+		修改 base.py ，将 
+			>>if version < (1, 3, 13):
+			>>	raise ImproperlyConfigured....两行注释掉；
+		修改 operations.py ，将
+			>>if query is not None:
+			>>	query = query.decode(errors='replace')...中的 decode 改为 encode
+		如果安装的Django版本为2.1.4，则无需做以上修改。
+
+		并在启动web项目应用后在__init.py中添加
+			>>import pymysql
+			>>pymysql.install_as_MySQLdb()，确保使用pymysql连接Mysql数据库。
+
+
+2、复制IP扫描脚本文件
+（1）将 IP_check_tool 目录下的 GUI 目录、callIpTest、config、ipTest、dbTest文件复制到目标主机的ip_check目录。
+
+（2）修改config配置文件为目标主机的数据库配置。
+
+（3）打开命令行，进入ip_check目录，执行 >>pyinstaller.exe -F callIpTest.py  ，自动生成build、dist目录，其中dist目录下包含callIpTest.exe文件
+
+（4）运行 callIpTest.exe 按要求输入IP flag、数据表名等信息，即可完成写CSV文件、读写Mysql数据库。
+
+至此，数据库中已有当前网段中所有IP的访问状态和信息，数据准备阶段完成。
+
+
+
+
+3、创建web项目
+（1）打开命令行，在目标主机桌面上执行 >> django-admin startproject ip_manage    ，自动生成web项目ip_manage目录。
+
+（2）命令行进入ip_manage目录，执行 >> python manage.py startapp apps     ，生成web应用apps目录。
+
+（3）将源文件IP_management_system目录下的static、templates目录复制到外层ip_manage目录下。
+
+（4）web项目核心配置文件的修改。
+
+settings.py    复制源文件，将database配置修改为本机配置，allowed hosts添加服务器IP供外网访问。
+models.py     命令行进入外层ip_manage目录，执行 >> python manage.py inspectdb > models.py  ，自动完成数据表与web实体对象的映射。	
+views.py、urls.py、 templates目录下的html模板，可以直接复制，也可以根据实际需求，做适当修改。
+
+（5）启动配置好的web项目
+	>>python manage.py runserver 10.67.144.13:8000
+
+4、后续使用
+脚本及web项目在服务器部署完毕后，日常使用步骤为：首先运行callIpTest.exe 更新当前IP数据表，然后运行web项目即可。
+
+
+
+
+
+

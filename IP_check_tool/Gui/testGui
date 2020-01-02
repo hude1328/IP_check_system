@@ -1,0 +1,64 @@
+# -*- coding: utf-8 -*-
+
+# Form implementation generated from reading ui file 'testGui.ui'
+#
+# Created by: PyQt5 UI code generator 5.11.3
+#
+# WARNING! All changes made in this file will be lost!
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+class Ui_Form(object):
+    def setupUi(self, Form):
+        Form.setObjectName("Form")
+        Form.resize(632, 575)
+        self.label_ipFlag = QtWidgets.QLabel(Form)
+        self.label_ipFlag.setGeometry(QtCore.QRect(40, 20, 121, 20))
+        self.label_ipFlag.setObjectName("label_ipFlag")
+        self.lineEdit_ipFlag = QtWidgets.QLineEdit(Form)
+        self.lineEdit_ipFlag.setGeometry(QtCore.QRect(90, 20, 201, 21))
+        self.lineEdit_ipFlag.setText("")
+        self.lineEdit_ipFlag.setObjectName("lineEdit_ipFlag")
+        self.pushButton_checkIp = QtWidgets.QPushButton(Form)
+        self.pushButton_checkIp.setGeometry(QtCore.QRect(60, 520, 93, 31))
+        self.pushButton_checkIp.setObjectName("pushButton_checkIp")
+        self.textEdit = QtWidgets.QTextEdit(Form)
+        self.textEdit.setGeometry(QtCore.QRect(13, 90, 601, 421))
+        self.textEdit.setObjectName("textEdit")
+        self.label_table = QtWidgets.QLabel(Form)
+        self.label_table.setGeometry(QtCore.QRect(330, 20, 121, 20))
+        self.label_table.setObjectName("label_table")
+        self.lineEdit_table = QtWidgets.QLineEdit(Form)
+        self.lineEdit_table.setGeometry(QtCore.QRect(390, 20, 191, 20))
+        self.lineEdit_table.setObjectName("lineEdit_table")
+        self.label_asset = QtWidgets.QLabel(Form)
+        self.label_asset.setGeometry(QtCore.QRect(40, 60, 121, 20))
+        self.label_asset.setObjectName("label_asset")
+        self.lineEdit_assetPath = QtWidgets.QLineEdit(Form)
+        self.lineEdit_assetPath.setGeometry(QtCore.QRect(140, 60, 381, 20))
+        self.lineEdit_assetPath.setObjectName("lineEdit_assetPath")
+        self.toolButton_assetPath = QtWidgets.QToolButton(Form)
+        self.toolButton_assetPath.setGeometry(QtCore.QRect(540, 60, 41, 21))
+        self.toolButton_assetPath.setObjectName("toolButton_assetPath")
+        self.pushButton_checkIpWriteMySQL = QtWidgets.QPushButton(Form)
+        self.pushButton_checkIpWriteMySQL.setGeometry(QtCore.QRect(180, 520, 241, 31))
+        self.pushButton_checkIpWriteMySQL.setObjectName("pushButton_checkIpWriteMySQL")
+        self.pushButton_asset = QtWidgets.QPushButton(Form)
+        self.pushButton_asset.setGeometry(QtCore.QRect(450, 520, 93, 31))
+        self.pushButton_asset.setObjectName("pushButton_asset")
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "IP检测工具 2019.11.21.1003"))
+        self.label_ipFlag.setText(_translate("Form", "IP标识:"))
+        self.pushButton_checkIp.setText(_translate("Form", "开始检测IP"))
+        self.label_table.setText(_translate("Form", "数据表名:"))
+        self.lineEdit_table.setText(_translate("Form", "app_ip"))
+        self.label_asset.setText(_translate("Form", "资产更新文件:"))
+        self.toolButton_assetPath.setText(_translate("Form", "..."))
+        self.pushButton_checkIpWriteMySQL.setText(_translate("Form", "开始检测IP&写MySQL"))
+        self.pushButton_asset.setText(_translate("Form", "更新资产信息"))
+
